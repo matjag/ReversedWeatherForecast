@@ -15,7 +15,7 @@ class MainActivity : AppCompatActivity() {
 
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        val textView = findViewById<TextView>(R.id.text_view)
+//        val textView = findViewById<TextView>(R.id.text_view)
         val button = findViewById<Button>(R.id.button)
 
         button.setOnClickListener {
@@ -42,7 +42,7 @@ class MainActivity : AppCompatActivity() {
 
                 runOnUiThread {
 
-                    textView.text = response
+//                    textView.text = response
                 }
             }.start()
         }
