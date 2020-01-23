@@ -174,8 +174,10 @@ class MainActivity : AppCompatActivity() {
         var counter = 0
 
         cities.forEach{
-            if(haversineDistance(loc.lat, loc.lon, it.lat, it.lon) <= disc){
+            if(haversineDistance(loc.lat, loc.lon, it.lat, it.lon) <= disc && counter < 59){
                 listOfCity.add(it)
+                counter++;
+
             }
         }
 
@@ -189,8 +191,8 @@ class MainActivity : AppCompatActivity() {
         var lat = 0.0
         var lon = 0.0
 
-        lat = degreeToRadian(lat1 - lat2)
-        lon = degreeToRadian(lon1 - lon2)
+        lat = degreeToRadian(lat2 - lat1)
+        lon = degreeToRadian(lon2 - lon1)
 
         //var h1 = Math.Sin(lat / 2) * Math.Sin(lat / 2) + Math.Cos(DegreeToRadian(pos1_lat)) * Math.Cos(DegreeToRadian(pos2_lat)) * Math.Sin(lng / 2) * Math.Sin(lng / 2);
         var h1 = sin(lon / 2.0) * sin(lon / 2.0) + cos(degreeToRadian(lon1)) * cos(degreeToRadian(lon2)) * sin(lat / 2.0) * sin(lat / 2.0)
@@ -203,7 +205,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     fun degreeToRadian(angle: Double): Double{
-        val d = (angle / 180.0)
+        val d = ( (PI * angle) / 180.0)
         return d
     }
 
