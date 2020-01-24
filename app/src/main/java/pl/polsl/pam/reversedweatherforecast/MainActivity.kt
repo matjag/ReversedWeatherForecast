@@ -1,15 +1,23 @@
 package pl.polsl.pam.reversedweatherforecast
 
+import android.Manifest
+import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationListener
+import android.location.LocationManager
 import android.os.Bundle
+import android.provider.Settings
+import android.support.v4.app.ActivityCompat
+import android.support.v4.content.ContextCompat
 import android.support.v7.app.AppCompatActivity
+import android.util.Log
 import android.view.View
 import android.widget.*
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlin.math.*
-
-//import jdk.nashorn.internal.runtime.ScriptingFunctions.readLine
-//import sun.misc.ClassLoaderUtil
 
 
 class MainActivity : AppCompatActivity() {
@@ -18,7 +26,13 @@ class MainActivity : AppCompatActivity() {
     var cities = mutableListOf<City>()
     var isByCity = true
     var distance = 50
-    var localizationCoord =  Localization(0.0, 0.0)
+    var localizationCoord = Localization(0.0, 0.0)
+
+    lateinit var locationManager: LocationManager
+    private var hasGps = false
+    private var hasNetwork = false
+    private var locationGps: Location? = null
+    private var locationNetwork: Location? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -32,42 +46,52 @@ class MainActivity : AppCompatActivity() {
         val seekBarLabel = findViewById<TextView>(R.id.textView4)
         seekBarLabel.text = distance.toString() + "km"
 
-        val fileText: List<String> = applicationContext.assets.open("start_cities.txt").bufferedReader().use{
-            it.readLines()
-        }
+
+        val fileText: List<String> =
+            applicationContext.assets.open("start_cities.txt").bufferedReader().use {
+                it.readLines()
+            }
         //println(fileText)
-        for(s in fileText){
+        for (s in fileText) {
             val city = s.split(";")
-            startCities.add(City(city[0].toInt(), city[1], city[2].toDouble(), city[3].toDouble(), city[4].toDouble()))
+            startCities.add(
+                City(
+                    city[0].toInt(),
+                    city[1],
+                    city[2].toDouble(),
+                    city[3].toDouble(),
+                    city[4].toDouble()
+                )
+            )
         }
 
-        val fileText2: List<String> = applicationContext.assets.open("cities.txt").bufferedReader().use{
-            it.readLines()
-        }
+        val fileText2: List<String> =
+            applicationContext.assets.open("cities.txt").bufferedReader().use {
+                it.readLines()
+            }
         //println(fileText)
-        for(s in fileText2){
+        for (s in fileText2) {
             val city = s.split(";")
-            cities.add(City(city[0].toInt(), city[1], city[2].toDouble(), city[3].toDouble(), city[4].toDouble()))
+            cities.add(
+                City(
+                    city[0].toInt(),
+                    city[1],
+                    city[2].toDouble(),
+                    city[3].toDouble(),
+                    city[4].toDouble()
+                )
+            )
         }
-
-//        radioGroup.setOnCheckedChangeListener { radioGroup, i ->
-//            radioGroup.
-//        }
 
         radioGroup.setOnCheckedChangeListener { _, checkedId ->
             val radio: RadioButton = findViewById(checkedId)
             spinner3.isEnabled = radio.id == R.id.bycity
-            if(radio.id == R.id.bycity){
-                isByCity = true
-            }
-            else{
-                isByCity = false
-            }
+            isByCity = radio.id == R.id.bycity
         }
 
         var selectedCity: City?
         var spinList = mutableListOf<String>()
-        startCities.forEach{
+        startCities.forEach {
             spinList.add(it.cityName)
         }
         // Create an ArrayAdapter using a simple spinner layout and languages array
@@ -83,12 +107,15 @@ class MainActivity : AppCompatActivity() {
 
         seekBar.setOnSeekBarChangeListener(object :
             SeekBar.OnSeekBarChangeListener {
-            override fun onProgressChanged(seek: SeekBar,
-                                           progress: Int, fromUser: Boolean) {
+            override fun onProgressChanged(
+                seek: SeekBar,
+                progress: Int, fromUser: Boolean
+            ) {
                 // write custom code for progress is changed
                 distance = progress
                 seekBarLabel.text = distance.toString() + "km";
             }
+
             override fun onStartTrackingTouch(seek: SeekBar) {
             }
 
@@ -96,12 +123,20 @@ class MainActivity : AppCompatActivity() {
             }
         })
 
-        spinner3?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+        spinner3?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: AdapterView<*>?) {
             }
 
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                localizationCoord.setLocalization(startCities[position].lat, startCities[position].lon)
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                localizationCoord.setLocalization(
+                    startCities[position].lat,
+                    startCities[position].lon
+                )
             }
 
         }
@@ -112,8 +147,7 @@ class MainActivity : AppCompatActivity() {
 //                Toast.makeText(applicationContext," On checked change :"+
 //                        " ${radio.text}",
 //                    Toast.LENGTH_SHORT).show()
-//            })
-//        button.setOnClickListener{
+//
 //            // Get the checked radio button id from radio group
 //            var id: Int = radioGroup.checkedRadioButtonId
 //            if (id!=-1){ // If any radio button checked from radio group
@@ -131,23 +165,22 @@ class MainActivity : AppCompatActivity() {
 //        }
 
 
+        button.setOnClickListener {
 
+            getLocation()
+            // w tym miejscu bedzie obliczenie wszystkiego
+            // 1. pobrac lokalizacje z localizationCoord
+            // 2. pobrac dystans przeszukiwania z distance
+            // 3. wyszukać miasta które dla których nalezy sprawdzic pogode
 
-    button.setOnClickListener {
+            var c = findCities(localizationCoord, distance)
 
-        // w tym miejscu bedzie obliczenie wszystkiego
-        // 1. pobrac lokalizacje z localizationCoord
-        // 2. pobrac dystans przeszukiwania z distance
-        // 3. wyszukać miasta które dla których nalezy sprawdzic pogode
-
-        var c = findCities(localizationCoord, distance)
-
-        print(c)
-        //val intent = Intent(this, ChooseWeatherActivity::class.java)
-        // To pass any data to next activity
-        //intent.putExtra("keyIdentifier", value)
-        // start your next activity
-        //startActivity(intent)
+            print(c)
+            //val intent = Intent(this, ChooseWeatherActivity::class.java)
+            // To pass any data to next activity
+            //intent.putExtra("keyIdentifier", value)
+            // start your next activity
+            //startActivity(intent)
 
 //            Thread {
 //                //api.openweathermap.org/data/2.5/forecast?id={city ID} //wyszukiwanie po id
@@ -168,13 +201,13 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun findCities(loc: Localization, disc: Int) : List<City>{
+    fun findCities(loc: pl.polsl.pam.reversedweatherforecast.Localization, disc: Int): List<City> {
         var listOfCity = mutableListOf<City>()
 
         var counter = 0
 
-        cities.forEach{
-            if(haversineDistance(loc.lat, loc.lon, it.lat, it.lon) <= disc && counter < 59){
+        cities.forEach {
+            if (haversineDistance(loc.lat, loc.lon, it.lat, it.lon) <= disc && counter < 59) {
                 listOfCity.add(it)
                 counter++;
 
@@ -184,7 +217,7 @@ class MainActivity : AppCompatActivity() {
         return listOfCity
     }
 
-    fun haversineDistance(lat1: Double, lon1:Double, lat2: Double, lon2: Double): Double{
+    fun haversineDistance(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         var tmpDistance = 0.0
 
         var R = 6371
@@ -195,7 +228,10 @@ class MainActivity : AppCompatActivity() {
         lon = degreeToRadian(lon2 - lon1)
 
         //var h1 = Math.Sin(lat / 2) * Math.Sin(lat / 2) + Math.Cos(DegreeToRadian(pos1_lat)) * Math.Cos(DegreeToRadian(pos2_lat)) * Math.Sin(lng / 2) * Math.Sin(lng / 2);
-        var h1 = sin(lon / 2.0) * sin(lon / 2.0) + cos(degreeToRadian(lon1)) * cos(degreeToRadian(lon2)) * sin(lat / 2.0) * sin(lat / 2.0)
+        var h1 =
+            sin(lon / 2.0) * sin(lon / 2.0) + cos(degreeToRadian(lon1)) * cos(degreeToRadian(lon2)) * sin(
+                lat / 2.0
+            ) * sin(lat / 2.0)
         var h2 = 2 * asin(min(1.0, sqrt(h1)))
 
         tmpDistance = R * h2
@@ -204,14 +240,140 @@ class MainActivity : AppCompatActivity() {
         return tmpDistance
     }
 
-    fun degreeToRadian(angle: Double): Double{
-        val d = ( (PI * angle) / 180.0)
+    fun degreeToRadian(angle: Double): Double {
+        val d = ((PI * angle) / 180.0)
         return d
     }
 
+//    private val locationListener: LocationListener = object : LocationListener {
+//        override fun onLocationChanged(location: Location) {
+//            thetext= ("" + location.longitude + ":" + location.latitude)
+//        }
+//        override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
+//        override fun onProviderEnabled(provider: String) {}
+//        override fun onProviderDisabled(provider: String) {}
+//    }
+
+
+    @SuppressLint("MissingPermission")
+    private fun getLocation(): Localization {
+        var localization = Localization(0.0, 0.0)
+        getLocationPermission()
+        locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        hasGps = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
+        hasNetwork = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        if (hasGps || hasNetwork) {
+
+            if (hasGps) {
+                Log.d("CodeAndroidLocation", "hasGps")
+                locationManager.requestLocationUpdates(
+                    LocationManager.GPS_PROVIDER,
+                    5000,
+                    0F,
+                    object : LocationListener {
+                        override fun onLocationChanged(location: Location?) {
+                            if (location != null) {
+                                locationGps = location
+                                localization.lat = locationGps!!.latitude
+                                localization.lon = locationGps!!.longitude
+                            }
+                        }
+
+                        override fun onStatusChanged(
+                            provider: String?,
+                            status: Int,
+                            extras: Bundle?
+                        ) {
+
+                        }
+
+                        override fun onProviderEnabled(provider: String?) {
+
+                        }
+
+                        override fun onProviderDisabled(provider: String?) {
+
+                        }
+
+                    })
+
+                val localGpsLocation =
+                    locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER)
+                if (localGpsLocation != null)
+                    locationGps = localGpsLocation
+            }
+            if (hasNetwork) {
+                Log.d("CodeAndroidLocation", "hasGps")
+                locationManager.requestLocationUpdates(
+                    LocationManager.NETWORK_PROVIDER,
+                    5000,
+                    0F,
+                    object : LocationListener {
+                        override fun onLocationChanged(location: Location?) {
+                            if (location != null) {
+                                locationGps = location
+                                localization.lat = locationGps!!.latitude
+                                localization.lon = locationGps!!.longitude
+                            }
+                        }
+
+                        override fun onStatusChanged(
+                            provider: String?,
+                            status: Int,
+                            extras: Bundle?
+                        ) {
+
+                        }
+
+                        override fun onProviderEnabled(provider: String?) {
+
+                        }
+
+                        override fun onProviderDisabled(provider: String?) {
+
+                        }
+
+                    })
+
+                val localNetworkLocation =
+                    locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
+                if (localNetworkLocation != null)
+                    locationNetwork = localNetworkLocation
+            }
+
+            if (locationGps != null && locationNetwork != null) {
+                if (locationGps!!.accuracy > locationNetwork!!.accuracy) {
+                    localization.lat = locationNetwork!!.latitude
+                    localization.lon = locationNetwork!!.longitude
+                } else {
+                    localization.lat = locationNetwork!!.latitude
+                    localization.lon = locationNetwork!!.longitude
+                }
+            }
+
+        } else {
+            startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
+        }
+
+        return localization
+    }
+
+    fun getLocationPermission() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                0
+            )
+            return
+        }
+    }
 }
 
-    // Get the selected radio button text using radio button on click listener
+
+// Get the selected radio button text using radio button on click listener
 //    fun radio_button_click(view: View){
 //        // Get the clicked radio button instance
 //        val radio: RadioButton = findViewById(radioGroup.checkedRadioButtonId)
