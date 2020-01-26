@@ -3,9 +3,17 @@ package pl.polsl.pam.reversedweatherforecast
 import android.content.Intent
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
+import android.util.JsonReader
+import android.util.Log
 import android.view.View
 import android.widget.*
+import co.metalab.asyncawait.async
+import com.beust.klaxon.Klaxon
 import kotlinx.android.synthetic.main.activity_main.*
+import pl.polsl.pam.reversedweatherforecast.ServerEntity.ServerForecast
+import pl.polsl.pam.reversedweatherforecast.ServerEntity.TestForecast
+import java.io.StringReader
+import java.net.URL
 import kotlin.math.*
 
 //import jdk.nashorn.internal.runtime.ScriptingFunctions.readLine
@@ -19,6 +27,8 @@ class MainActivity : AppCompatActivity() {
     var isByCity = true
     var distance = 50
     var localizationCoord =  Localization(0.0, 0.0)
+    var citiesFromResponse = mutableListOf<ServerForecast.TestForecastInfo>()
+    var isInThread = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
 
@@ -30,6 +40,9 @@ class MainActivity : AppCompatActivity() {
         val spinner3 = findViewById<Spinner>(R.id.spinner3)
         val seekBar = findViewById<SeekBar>(R.id.seekBar)
         val seekBarLabel = findViewById<TextView>(R.id.textView4)
+        val progressBar = findViewById<ProgressBar>(R.id.progressBar)
+        progressBar.setVisibility(View.INVISIBLE)
+
         seekBarLabel.text = distance.toString() + "km"
 
         val fileText: List<String> = applicationContext.assets.open("start_cities.txt").bufferedReader().use{
@@ -101,6 +114,7 @@ class MainActivity : AppCompatActivity() {
             }
 
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+
                 localizationCoord.setLocalization(startCities[position].lat, startCities[position].lon)
             }
 
@@ -140,31 +154,67 @@ class MainActivity : AppCompatActivity() {
         // 2. pobrac dystans przeszukiwania z distance
         // 3. wyszukać miasta które dla których nalezy sprawdzic pogode
 
-        var c = findCities(localizationCoord, distance)
+        if(isInThread == false){
+            isInThread = true
+            progressBar.setVisibility(View.VISIBLE)
 
-        print(c)
-        //val intent = Intent(this, ChooseWeatherActivity::class.java)
-        // To pass any data to next activity
-        //intent.putExtra("keyIdentifier", value)
-        // start your next activity
-        //startActivity(intent)
+            Thread {
+                var c = findCities(localizationCoord, distance)
+                var test = mutableListOf<String>()
+                Log.i("przed requestem", "msg")
+                c.forEach {
+                    val response =
+                    //api.openweathermap.org/data/2.5/forecast?id={city ID}
+                            //URL("https://api.openweathermap.org/data/2.5/forecast?q=Gliwice,PL&APPID=4749cf6173631a815735a7b0b88aeef7").readText()
+                            URL("https://api.openweathermap.org/data/2.5/forecast?id=" + it.id.toString() + "&APPID=4749cf6173631a815735a7b0b88aeef7").readText()
 
-//            Thread {
-//                //api.openweathermap.org/data/2.5/forecast?id={city ID} //wyszukiwanie po id
-//                val response =
-//                    URL("https://api.openweathermap.org/data/2.5/forecast?q=Gliwice,PL&APPID=4749cf6173631a815735a7b0b88aeef7").readText()
-//
-//                try{
-//                    var result = Klaxon().parse<TestForecast.TestForecastInfo>(response)
-//                }
-//                catch (ex: Exception){
-//                }
-//
-//                runOnUiThread {
-//
-////                    textView.text = response
-//                }
-//            }.start()
+                    test.add(response)
+                }
+                Log.i("po requestem", "msg")
+
+                val klaxon = Klaxon()
+                test.forEach{
+                    try {
+                        var result = Klaxon().parse<ServerForecast.TestForecastInfo>(it)
+
+                        if (result != null) {
+                            citiesFromResponse.add(result)
+                        }
+                    }catch (ex: Exception){
+                    }
+                }
+                Log.i("miasta", "msg")
+                isInThread = false
+                progressBar.setVisibility(View.INVISIBLE)
+
+                //val array = arrayOfNulls<ServerForecast.TestForecastInfo>(citiesFromResponse.size)
+
+                // .toArray(array)
+
+                val array2 = citiesFromResponse.toTypedArray()
+
+
+                val intent = Intent(this, ChooseWeatherActivity::class.java)
+                // To pass any data to next activity
+                intent.putExtra("keyIdentifier", array2)
+                // start your next activity
+                startActivity(intent)
+
+//            val intent = Intent(this, ChooseWeatherActivity::class.java)
+//            // To pass any data to next activity
+//            intent.putExtra("keyIdentifier", array2)
+//            // start your next activity
+//            startActivity(intent)
+
+            }.start()
+
+            //while(isInThread);
+            //var asd = 12 + 23
+        }
+
+
+
+
         }
     }
 
