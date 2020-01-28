@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
+import android.net.ConnectivityManager
 import android.os.Bundle
 import android.provider.Settings
 import android.support.v4.app.ActivityCompat
@@ -181,51 +182,52 @@ class MainActivity : AppCompatActivity() {
             // 2. pobrac dystans przeszukiwania z distance
             // 3. wyszukać miasta które dla których nalezy sprawdzic pogode
 
-            if (isInThread == false) {
-                isInThread = true
-                progressBar.setVisibility(View.VISIBLE)
+            if (isOnline(applicationContext) == true) {
+                if (isInThread == false) {
+                    isInThread = true
+                    progressBar.setVisibility(View.VISIBLE)
 
-                Thread {
-                    var c = findCities(localizationCoord, distance)
-                    var test = mutableListOf<String>()
-                    Log.i("przed requestem", "msg")
-                    c.forEach {
-                        val response =
-                        //api.openweathermap.org/data/2.5/forecast?id={city ID}
-                            //URL("https://api.openweathermap.org/data/2.5/forecast?q=Gliwice,PL&APPID=4749cf6173631a815735a7b0b88aeef7").readText()
-                            URL("https://api.openweathermap.org/data/2.5/forecast?id=" + it.id.toString() + "&APPID=4749cf6173631a815735a7b0b88aeef7").readText()
+                    Thread {
+                        var c = findCities(localizationCoord, distance)
+                        var test = mutableListOf<String>()
+                        Log.i("przed requestem", "msg")
+                        c.forEach {
+                            val response =
+                            //api.openweathermap.org/data/2.5/forecast?id={city ID}
+                                //URL("https://api.openweathermap.org/data/2.5/forecast?q=Gliwice,PL&APPID=4749cf6173631a815735a7b0b88aeef7").readText()
+                                URL("https://api.openweathermap.org/data/2.5/forecast?id=" + it.id.toString() + "&APPID=4749cf6173631a815735a7b0b88aeef7").readText()
 
-                        test.add(response)
-                    }
-                    Log.i("po requestem", "msg")
-
-                    val klaxon = Klaxon()
-                    test.forEach {
-                        try {
-                            var result = Klaxon().parse<ServerForecast.TestForecastInfo>(it)
-
-                            if (result != null) {
-                                citiesFromResponse.add(result)
-                            }
-                        } catch (ex: Exception) {
+                            test.add(response)
                         }
-                    }
-                    Log.i("miasta", "msg")
-                    isInThread = false
-                    progressBar.setVisibility(View.INVISIBLE)
+                        Log.i("po requestem", "msg")
 
-                    //val array = arrayOfNulls<ServerForecast.TestForecastInfo>(citiesFromResponse.size)
+                        val klaxon = Klaxon()
+                        test.forEach {
+                            try {
+                                var result = Klaxon().parse<ServerForecast.TestForecastInfo>(it)
 
-                    // .toArray(array)
+                                if (result != null) {
+                                    citiesFromResponse.add(result)
+                                }
+                            } catch (ex: Exception) {
+                            }
+                        }
+                        Log.i("miasta", "msg")
+                        isInThread = false
+                        progressBar.setVisibility(View.INVISIBLE)
 
-                    val array2 = citiesFromResponse.toTypedArray()
+                        //val array = arrayOfNulls<ServerForecast.TestForecastInfo>(citiesFromResponse.size)
+
+                        // .toArray(array)
+
+                        val array2 = citiesFromResponse.toTypedArray()
 
 
-                    val intent = Intent(this, ChooseWeatherActivity::class.java)
-                    // To pass any data to next activity
-                    intent.putExtra("keyIdentifier", array2)
-                    // start your next activity
-                    startActivity(intent)
+                        val intent = Intent(this, ChooseWeatherActivity::class.java)
+                        // To pass any data to next activity
+                        intent.putExtra("keyIdentifier", array2)
+                        // start your next activity
+                        startActivity(intent)
 
 //            val intent = Intent(this, ChooseWeatherActivity::class.java)
 //            // To pass any data to next activity
@@ -233,12 +235,18 @@ class MainActivity : AppCompatActivity() {
 //            // start your next activity
 //            startActivity(intent)
 
-                }.start()
+                    }.start()
 
-                //while(isInThread);
-                //var asd = 12 + 23
+                    //while(isInThread);
+                    //var asd = 12 + 23
+                }
+            } else {
+                Toast.makeText(
+                    applicationContext,
+                    "Check your internet connection",
+                    Toast.LENGTH_LONG
+                ).show()
             }
-
         }
     }
 
@@ -293,13 +301,21 @@ class MainActivity : AppCompatActivity() {
         return d
     }
 
-//    private val locationListener: LocationListener = object : LocationListener {
-//        override fun onLocationChanged(location: Location) {
-//            thetext= ("" + location.longitude + ":" + location.latitude)
-//        }
-//        override fun onStatusChanged(provider: String, status: Int, extras: Bundle) {}
-//        override fun onProviderEnabled(provider: String) {}
-//        override fun onProviderDisabled(provider: String) {}
+
+    fun isOnline(context: Context): Boolean {
+        val connectivityManager =
+            context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val networkInfo = connectivityManager.activeNetworkInfo
+        return networkInfo != null && networkInfo.isConnected
+    }
+
+
+// Get the selected radio button text using radio button on click listener
+//    fun radio_button_click(view: View){
+//        // Get the clicked radio button instance
+//        val radio: RadioButton = findViewById(radioGroup.checkedRadioButtonId)
+//        Toast.makeText(applicationContext,"On click : ${radio.text}",
+//            Toast.LENGTH_SHORT).show()
 //    }
 
 
@@ -419,3 +435,4 @@ class MainActivity : AppCompatActivity() {
         }
     }
 }
+
