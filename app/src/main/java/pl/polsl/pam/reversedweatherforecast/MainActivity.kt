@@ -96,7 +96,10 @@ class MainActivity : AppCompatActivity() {
         radioGroup.setOnCheckedChangeListener { _, checkedId ->
             val radio: RadioButton = findViewById(checkedId)
             spinner3.isEnabled = radio.id == R.id.bycity
-            isByCity = radio.id == R.id.bycity
+            if(radio.id == R.id.bylocalization){
+                localizationCoord.lat = getLocation().lat
+                localizationCoord.lon = getLocation().lon
+            }
         }
 
         var selectedCity: City?
@@ -325,9 +328,6 @@ class MainActivity : AppCompatActivity() {
         getLocationPermission()
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         hasGps = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
-        hasNetwork = locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
-        if (hasGps || hasNetwork) {
-
             if (hasGps) {
                 Log.d("CodeAndroidLocation", "hasGps")
                 locationManager.requestLocationUpdates(
@@ -366,56 +366,14 @@ class MainActivity : AppCompatActivity() {
                 if (localGpsLocation != null)
                     locationGps = localGpsLocation
             }
-            if (hasNetwork) {
-                Log.d("CodeAndroidLocation", "hasGps")
-                locationManager.requestLocationUpdates(
-                    LocationManager.NETWORK_PROVIDER,
-                    5000,
-                    0F,
-                    object : LocationListener {
-                        override fun onLocationChanged(location: Location?) {
-                            if (location != null) {
-                                locationGps = location
-                                localization.lat = locationGps!!.latitude
-                                localization.lon = locationGps!!.longitude
-                            }
-                        }
 
-                        override fun onStatusChanged(
-                            provider: String?,
-                            status: Int,
-                            extras: Bundle?
-                        ) {
+            if (locationGps != null) {
 
-                        }
-
-                        override fun onProviderEnabled(provider: String?) {
-
-                        }
-
-                        override fun onProviderDisabled(provider: String?) {
-
-                        }
-
-                    })
-
-                val localNetworkLocation =
-                    locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER)
-                if (localNetworkLocation != null)
-                    locationNetwork = localNetworkLocation
+                localization.lat = locationGps!!.latitude
+                localization.lon = locationGps!!.longitude
             }
 
-            if (locationGps != null && locationNetwork != null) {
-                if (locationGps!!.accuracy > locationNetwork!!.accuracy) {
-                    localization.lat = locationNetwork!!.latitude
-                    localization.lon = locationNetwork!!.longitude
-                } else {
-                    localization.lat = locationNetwork!!.latitude
-                    localization.lon = locationNetwork!!.longitude
-                }
-            }
-
-        } else {
+         else {
             startActivity(Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS))
         }
 
