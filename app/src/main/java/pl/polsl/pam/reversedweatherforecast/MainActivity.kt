@@ -16,7 +16,6 @@ import android.support.v7.app.AppCompatActivity
 import android.util.Log
 import android.view.View
 import android.widget.*
-import co.metalab.asyncawait.async
 import com.beust.klaxon.Klaxon
 import kotlinx.android.synthetic.main.activity_main.*
 import pl.polsl.pam.reversedweatherforecast.ServerEntity.ServerForecast
