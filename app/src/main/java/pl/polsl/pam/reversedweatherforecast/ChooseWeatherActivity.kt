@@ -3,10 +3,7 @@ package pl.polsl.pam.reversedweatherforecast
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.view.View
-import android.widget.AdapterView
-import android.widget.ArrayAdapter
-import android.widget.EditText
-import android.widget.Spinner
+import android.widget.*
 import pl.polsl.pam.reversedweatherforecast.ServerEntity.ServerForecast
 
 class ChooseWeatherActivity : AppCompatActivity() {
@@ -18,12 +15,12 @@ class ChooseWeatherActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_choose_weather)
 
-        val people = intent.getSerializableExtra("keyIdentifier") as? Array<ServerForecast.TestForecastInfo>
+        val cities = intent.getSerializableExtra("keyIdentifier") as? Array<ServerForecast.TestForecastInfo>
 
         val editText1 = findViewById<EditText>(R.id.editText)
         val editText2 = findViewById<EditText>(R.id.editText2)
         val spinner = findViewById<Spinner>(R.id.spinner)
-
+        val button = findViewById<Button>(R.id.button2)
 
         spinWeather.add("sunny")
         spinWeather.add("rainy")
@@ -38,9 +35,6 @@ class ChooseWeatherActivity : AppCompatActivity() {
         selectedWeather = spinWeather[0]
 
 
-
-
-
         spinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
             override fun onNothingSelected(parent: AdapterView<*>?) {
             }
@@ -49,7 +43,10 @@ class ChooseWeatherActivity : AppCompatActivity() {
                 selectedWeather = spinWeather[position]
             }
         }
+
+        button.setOnClickListener {
+
+            Toast.makeText(applicationContext,"temp: ${editText1.text} - ${editText2.text} miast: ${cities?.size} pogoda: ${selectedWeather} ", Toast.LENGTH_LONG).show()
+        }
     }
-
-
 }

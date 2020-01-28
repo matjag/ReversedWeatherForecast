@@ -1,18 +1,16 @@
 package pl.polsl.pam.reversedweatherforecast
 
+import android.content.Context
 import android.content.Intent
+import android.net.ConnectivityManager
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
-import android.util.JsonReader
 import android.util.Log
 import android.view.View
 import android.widget.*
-import co.metalab.asyncawait.async
 import com.beust.klaxon.Klaxon
 import kotlinx.android.synthetic.main.activity_main.*
 import pl.polsl.pam.reversedweatherforecast.ServerEntity.ServerForecast
-import pl.polsl.pam.reversedweatherforecast.ServerEntity.TestForecast
-import java.io.StringReader
 import java.net.URL
 import kotlin.math.*
 
@@ -154,51 +152,52 @@ class MainActivity : AppCompatActivity() {
         // 2. pobrac dystans przeszukiwania z distance
         // 3. wyszukać miasta które dla których nalezy sprawdzic pogode
 
-        if(isInThread == false){
-            isInThread = true
-            progressBar.setVisibility(View.VISIBLE)
+        if(isOnline(applicationContext) == true){
+            if(isInThread == false){
+                isInThread = true
+                progressBar.setVisibility(View.VISIBLE)
 
-            Thread {
-                var c = findCities(localizationCoord, distance)
-                var test = mutableListOf<String>()
-                Log.i("przed requestem", "msg")
-                c.forEach {
-                    val response =
-                    //api.openweathermap.org/data/2.5/forecast?id={city ID}
-                            //URL("https://api.openweathermap.org/data/2.5/forecast?q=Gliwice,PL&APPID=4749cf6173631a815735a7b0b88aeef7").readText()
-                            URL("https://api.openweathermap.org/data/2.5/forecast?id=" + it.id.toString() + "&APPID=4749cf6173631a815735a7b0b88aeef7").readText()
+                Thread {
+                    var c = findCities(localizationCoord, distance)
+                    var test = mutableListOf<String>()
+                    Log.i("przed requestem", "msg")
+                    c.forEach {
+                        val response =
+                        //api.openweathermap.org/data/2.5/forecast?id={city ID}
+                                //URL("https://api.openweathermap.org/data/2.5/forecast?q=Gliwice,PL&APPID=4749cf6173631a815735a7b0b88aeef7").readText()
+                                URL("https://api.openweathermap.org/data/2.5/forecast?id=" + it.id.toString() + "&APPID=4749cf6173631a815735a7b0b88aeef7").readText()
 
-                    test.add(response)
-                }
-                Log.i("po requestem", "msg")
-
-                val klaxon = Klaxon()
-                test.forEach{
-                    try {
-                        var result = Klaxon().parse<ServerForecast.TestForecastInfo>(it)
-
-                        if (result != null) {
-                            citiesFromResponse.add(result)
-                        }
-                    }catch (ex: Exception){
+                        test.add(response)
                     }
-                }
-                Log.i("miasta", "msg")
-                isInThread = false
-                progressBar.setVisibility(View.INVISIBLE)
+                    Log.i("po requestem", "msg")
 
-                //val array = arrayOfNulls<ServerForecast.TestForecastInfo>(citiesFromResponse.size)
+                    val klaxon = Klaxon()
+                    test.forEach{
+                        try {
+                            var result = Klaxon().parse<ServerForecast.TestForecastInfo>(it)
 
-                // .toArray(array)
+                            if (result != null) {
+                                citiesFromResponse.add(result)
+                            }
+                        }catch (ex: Exception){
+                        }
+                    }
+                    Log.i("miasta", "msg")
+                    isInThread = false
+                    progressBar.setVisibility(View.INVISIBLE)
 
-                val array2 = citiesFromResponse.toTypedArray()
+                    //val array = arrayOfNulls<ServerForecast.TestForecastInfo>(citiesFromResponse.size)
+
+                    // .toArray(array)
+
+                    val array2 = citiesFromResponse.toTypedArray()
 
 
-                val intent = Intent(this, ChooseWeatherActivity::class.java)
-                // To pass any data to next activity
-                intent.putExtra("keyIdentifier", array2)
-                // start your next activity
-                startActivity(intent)
+                    val intent = Intent(this, ChooseWeatherActivity::class.java)
+                    // To pass any data to next activity
+                    intent.putExtra("keyIdentifier", array2)
+                    // start your next activity
+                    startActivity(intent)
 
 //            val intent = Intent(this, ChooseWeatherActivity::class.java)
 //            // To pass any data to next activity
@@ -206,11 +205,17 @@ class MainActivity : AppCompatActivity() {
 //            // start your next activity
 //            startActivity(intent)
 
-            }.start()
+                }.start()
 
-            //while(isInThread);
-            //var asd = 12 + 23
+                //while(isInThread);
+                //var asd = 12 + 23
+            }
         }
+        else{
+            Toast.makeText(applicationContext,"Check your internet connection", Toast.LENGTH_LONG).show()
+        }
+
+
 
 
 
@@ -258,6 +263,13 @@ class MainActivity : AppCompatActivity() {
         val d = ( (PI * angle) / 180.0)
         return d
     }
+
+    fun isOnline(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val networkInfo = connectivityManager.activeNetworkInfo
+        return networkInfo != null && networkInfo.isConnected
+    }
+
 
 }
 
