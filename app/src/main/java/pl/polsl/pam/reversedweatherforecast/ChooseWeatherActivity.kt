@@ -3,6 +3,7 @@ package pl.polsl.pam.reversedweatherforecast
 import android.os.Build
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.util.Log
 //import android.support.annotation.RequiresApi
 import android.view.View
 import android.widget.*
@@ -58,9 +59,6 @@ class ChooseWeatherActivity : AppCompatActivity() {
             }
             else{
                 cities?.forEach {
-                    //var date: LocalDateTime
-                    //date = LocalDateTime.parse(it.list.get(0).dt_txt,  DateTimeFormatter.ofPattern("yyyy-MM-dd hh-mm-ss"))
-                    //var d = Date.parse(it.list.get(0).dt_txt, DateFormatter.ofPattern("yyyy-MM-dd hh-mm-ss"))
                     var sum = 0.0
                     var avg = 0.0
                     var counter = 0
@@ -69,12 +67,13 @@ class ChooseWeatherActivity : AppCompatActivity() {
                         var l = it.dt.toLong() * 1000
                         var d = Date(l)
                         var h = d.hours
-                        if(h >= 8 || h <= 19){
+                        if(h >= 8 && h <= 19){
                             sum += it.main.temp - 273
                             counter++
                         }
                     }
-                    
+                    avg = sum / counter
+                    Log.i("msg", "AVG: " + avg.toString())
 
                     if(isGoodWeatherForCity(it)){
                         goodCities.add(it)
