@@ -186,6 +186,7 @@ class MainActivity : AppCompatActivity() {
                 if (isInThread == false) {
                     isInThread = true
                     progressBar.setVisibility(View.VISIBLE)
+                    citiesFromResponse.clear()
 
                     Thread {
                         var c = findCities(localizationCoord, distance)
