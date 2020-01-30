@@ -1,15 +1,12 @@
 package pl.polsl.pam.reversedweatherforecast
 
-import android.os.Build
-import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import android.support.v7.app.AppCompatActivity
 import android.util.Log
-//import android.support.annotation.RequiresApi
 import android.view.View
+import android.view.WindowManager
 import android.widget.*
 import pl.polsl.pam.reversedweatherforecast.ServerEntity.ServerForecast
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import java.util.*
 
 class ChooseWeatherActivity : AppCompatActivity() {
@@ -18,7 +15,6 @@ class ChooseWeatherActivity : AppCompatActivity() {
     var spinWeather = mutableListOf<String>()
     var selectedWeather = ""
 
-//    @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_choose_weather)
@@ -29,6 +25,7 @@ class ChooseWeatherActivity : AppCompatActivity() {
         val editText2 = findViewById<EditText>(R.id.editText2)
         val spinner = findViewById<Spinner>(R.id.spinner)
         val button = findViewById<Button>(R.id.button2)
+        val listView = findViewById<ListView>(R.id.listView)
 
         spinWeather.add("sunny")
         spinWeather.add("rainy")
@@ -42,8 +39,7 @@ class ChooseWeatherActivity : AppCompatActivity() {
 
         selectedWeather = spinWeather[0]
 
-
-        spinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+        spinner?.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: AdapterView<*>?) {
             }
 
@@ -53,41 +49,138 @@ class ChooseWeatherActivity : AppCompatActivity() {
         }
 
         button.setOnClickListener {
+            goodCities.clear()
+            var sunnyCounter = 0
+            var rainyCounter = 0
+            var snowyCounter = 0
+            var stormyCounter = 0
+            var cloudyCounter = 0
 
-            if(editText2.text.toString().toInt() - editText1.text.toString().toInt() < 0){
-                Toast.makeText(applicationContext,"Select correct min and max temperature", Toast.LENGTH_LONG).show()
-            }
-            else{
-                cities?.forEach {
-                    var sum = 0.0
-                    var avg = 0.0
-                    var counter = 0
-                    it.list.forEach{
+            if (editText1.text.isBlank() || editText2.text.isBlank()) {
+                Toast.makeText(applicationContext, "Min and Max temperature can't be empty", Toast.LENGTH_LONG).show()
+            } else {
+                if (editText2.text.toString().toInt() - editText1.text.toString().toInt() < 0) {
+                    Toast.makeText(applicationContext, "Select correct min and max temperature", Toast.LENGTH_LONG).show()
+                } else {
 
-                        var l = it.dt.toLong() * 1000
-                        var d = Date(l)
-                        var h = d.hours
-                        if(h >= 8 && h <= 19){
-                            sum += it.main.temp - 273
-                            counter++
+//                    var statusMin = 0
+//                    var statusMax = 0
+//
+//                    if (selectedWeather.equals("stormy")) {
+//                        statusMin = 200
+//                        statusMax = 232
+//                    }
+//                    if (selectedWeather.equals("rainy")) {
+//                        statusMin = 300
+//                        statusMax = 531
+//                    }
+//                    if (selectedWeather.equals("snowy")) {
+//                        statusMin = 600
+//                        statusMax = 622
+//                    }
+//                    if (selectedWeather.equals("sunny")) {
+//                        statusMin = 800
+//                        statusMax = 802
+//                    }
+//                    if (selectedWeather.equals("cloudy")) {
+//                        statusMin = 803
+//                        statusMax = 804
+//                    }
+
+                    cities?.forEach {
+                        var sum = 0.0
+                        var avg = 0.0
+                        var counter = 0
+                        it.list.forEach {
+
+                            var l = it.dt.toLong() * 1000
+                            var d = Date(l)
+                            var h = d.hours
+                            if (h >= 8 && h <= 19) {
+                                sum += it.main.temp - 273
+                                counter++
+
+                                var stat = it.weather?.get(0).id
+
+
+                                //sunny
+                                if(stat >= 800 && stat <= 802){
+                                    sunnyCounter++
+                                }
+                                //cloudy
+                                else if(stat >= 803 && stat <= 804){
+                                    cloudyCounter++
+                                }
+                                //rainy
+                                else if(stat >= 300 && stat <= 531){
+                                    rainyCounter++
+                                }
+                                //snowy
+                                else if(stat >= 600 && stat <= 622){
+                                    snowyCounter++
+                                }
+                                //stormy
+                                else if(stat >= 200 && stat <= 232){
+                                    stormyCounter++
+                                }
+                            }
+                        }
+                        avg = sum / counter
+                        Log.i("msg", "AVG: " + avg.toString())
+
+                        var min = editText1.text.toString().toDouble()
+                        var max = editText2.text.toString().toDouble()
+
+                        var countersArray: IntArray = intArrayOf(sunnyCounter, cloudyCounter, rainyCounter, snowyCounter, stormyCounter)
+                        //znalezc max po indeksach
+                        var idx = findMaxValue(countersArray)
+
+                        var weatherMatch = false
+
+                        if (selectedWeather.equals("sunny") && idx == 0) {
+                            weatherMatch = true
+                        }
+                        else if (selectedWeather.equals("cloudy") && idx == 1) {
+                            weatherMatch = true
+                        }
+                        else if (selectedWeather.equals("rainy") && idx == 2) {
+                            weatherMatch = true
+                        }
+                        else if (selectedWeather.equals("snowy") && idx == 3) {
+                            weatherMatch = true
+                        }
+                        else if (selectedWeather.equals("stormy") && idx == 4) {
+                            weatherMatch = true
+                        }
+
+                        if (avg.compareTo(min) >= 0 && avg.compareTo(max) <= 0 && weatherMatch) {
+                            goodCities.add(it)
                         }
                     }
-                    avg = sum / counter
-                    Log.i("msg", "AVG: " + avg.toString())
-
-                    if(isGoodWeatherForCity(it)){
-                        goodCities.add(it)
+                    Toast.makeText(applicationContext, "We find: ${goodCities?.size} cities", Toast.LENGTH_LONG).show()
+                    var goodCitiesNames = mutableListOf<String>()
+                    goodCities.forEach {
+                        goodCitiesNames.add(it.city.name)
                     }
+
+                    var goodCitiesArray = arrayOfNulls<String>(goodCitiesNames.size)
+                    goodCitiesArray = goodCitiesNames.toTypedArray()
+                    val adapter = ArrayAdapter(this, R.layout.listview_item2, goodCitiesArray)
+
+                    listView.adapter = adapter
                 }
             }
-            Toast.makeText(applicationContext,"temp: ${editText1.text} - ${editText2.text} miast: ${cities?.size} pogoda: ${selectedWeather} ", Toast.LENGTH_LONG).show()
         }
     }
 
-    fun isGoodWeatherForCity(cityWeather: ServerForecast.TestForecastInfo): Boolean{
+    fun findMaxValue(arr : IntArray) : Int{
+        var max = 0
 
-
-
-        return false
+        for (x in 1 until arr.size){
+            if(arr[max] < arr[x]){
+                max = x
+            }
+        }
+        return max
     }
 }

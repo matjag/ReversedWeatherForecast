@@ -29,7 +29,7 @@ class MainActivity : AppCompatActivity() {
     var startCities = mutableListOf<City>()
     var cities = mutableListOf<City>()
     var isByCity = true
-    var distance = 50
+    var distance = 25
     var localizationCoord = Localization(0.0, 0.0)
     var citiesFromResponse = mutableListOf<ServerForecast.TestForecastInfo>()
     var isInThread = false
@@ -54,7 +54,7 @@ class MainActivity : AppCompatActivity() {
         val progressBar = findViewById<ProgressBar>(R.id.progressBar)
         progressBar.setVisibility(View.INVISIBLE)
 
-        seekBarLabel.text = distance.toString() + "km"
+        seekBarLabel.text = distance.toString() + " km"
 
 
         val fileText: List<String> =
@@ -99,6 +99,8 @@ class MainActivity : AppCompatActivity() {
             if(radio.id == R.id.bylocalization){
                 localizationCoord.lat = getLocation().lat
                 localizationCoord.lon = getLocation().lon
+                localizationCoord.lat = getLocation().lat
+                localizationCoord.lon = getLocation().lon
             }
         }
 
@@ -126,7 +128,7 @@ class MainActivity : AppCompatActivity() {
             ) {
                 // write custom code for progress is changed
                 distance = progress
-                seekBarLabel.text = distance.toString() + "km";
+                seekBarLabel.text = distance.toString() + " km";
             }
 
             override fun onStartTrackingTouch(seek: SeekBar) {
@@ -326,7 +328,7 @@ class MainActivity : AppCompatActivity() {
     @SuppressLint("MissingPermission")
     private fun getLocation(): Localization {
         var localization = Localization(0.0, 0.0)
-        getLocationPermission()
+//        getLocationPermission()
         locationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
         hasGps = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)
             if (hasGps) {
